@@ -19,10 +19,17 @@ import com.aerospike.client.exp.ExpOperation;
 import com.aerospike.client.exp.ExpWriteFlags;
 import com.aerospike.client.exp.Expression;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 public class AerospikeListOperationExample {
 
@@ -41,14 +48,44 @@ public class AerospikeListOperationExample {
          * Main class - calls write and read example
          */
         public static void main(String[] args) {
-                AerospikeClient client = new AerospikeClient("localhost", 3000);
+                String configPath = "application.properties";
+                if (args.length > 0) {
+                        configPath = args[0];
+                }
+                Properties props = loadProperties(configPath);
+
+                String host = props.getProperty("aerospike.host");
+                int port = Integer.parseInt(props.getProperty("aerospike.port"));
+                String namespace = props.getProperty("aerospike.namespace");
+                String set = props.getProperty("aerospike.set");
+                String userKey = props.getProperty("aerospike.userKey");
+
+                AerospikeClient client = new AerospikeClient(host, port);
+                Key key = new Key(namespace, set, userKey);
                 try {
                         AerospikeListOperationExample example = new AerospikeListOperationExample(client);
-                        example.writeAndReadExample("vest_vault", "demo", "user-2");
+                        example.writeAndReadExample(namespace, set, key);
 
                 } finally {
                         client.close();
                 }
+        }
+
+        /**
+         * Loads application.properties file
+         * 
+         * @return Properties object
+         */
+        private static Properties loadProperties(String path) {
+                Properties props = new Properties();
+
+                try (InputStream input = new FileInputStream(path)) {
+                        props.load(input);
+                } catch (IOException e) {
+                        throw new RuntimeException("Failed to load properties from " + path, e);
+                }
+
+                return props;
         }
 
         /**
@@ -59,9 +96,7 @@ public class AerospikeListOperationExample {
          * @param set
          * @param userKey
          */
-        private void writeAndReadExample(String namespace, String set, String userKey) {
-
-                Key key = new Key(namespace, set, userKey);
+        private void writeAndReadExample(String namespace, String set, Key userKey) {
 
                 // Generate dynamic values
                 String listBinName = "emailHistory";
@@ -83,11 +118,11 @@ public class AerospikeListOperationExample {
                 );
 
                 WritePolicy writePolicy = new WritePolicy();
-                client.operate(writePolicy, key, operations);
+                client.operate(writePolicy, userKey, operations);
 
                 // Read back
                 Policy readPolicy = new Policy();
-                Record record = client.get(readPolicy, key);
+                Record record = client.get(readPolicy, userKey);
 
                 if (record != null) {
                         System.out.println("Record found:");
