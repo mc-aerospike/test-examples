@@ -1,3 +1,4 @@
+/** * DISCLAIMER: This code is for illustrative purposes only. * It is not intended for production use and is provided "as is" * without warranty of any kind, express or implied. */
 package com.example;
 
 import com.aerospike.client.AerospikeClient;
